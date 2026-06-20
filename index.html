@@ -3,308 +3,68 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LaTeX 公式导出器</title>
+<title>LaTeX 公式预览导出器 — 图灵完备版</title>
+
+<!-- Fonts -->
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.min.js"></script>
-<style>
-  :root {
-    --ink: #1a1a2e;
-    --paper: #f5f0e8;
-    --accent: #c8853a;
-    --accent2: #4a7fa5;
-    --muted: #8a8070;
-    --border: #d4c9b0;
-    --panel: #ede8df;
-    --shadow: rgba(26,26,46,0.12);
-  }
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+<!-- Stylesheet -->
+<link rel="stylesheet" href="css/style.css">
 
-  body {
-    background: var(--paper);
-    color: var(--ink);
-    font-family: 'Noto Serif SC', serif;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-
-  /* ── Header ── */
-  header {
-    padding: 28px 40px 20px;
-    border-bottom: 2px solid var(--border);
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-  }
-  header h1 {
-    font-family: 'Playfair Display', serif;
-    font-size: 2rem;
-    font-weight: 700;
-    letter-spacing: -0.02em;
-    color: var(--ink);
-  }
-  header h1 span { color: var(--accent); font-style: italic; }
-  header p {
-    font-size: 0.85rem;
-    color: var(--muted);
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  /* ── Main layout ── */
-  main {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0;
-  }
-
-  /* ── Left panel: controls ── */
-  .controls {
-    padding: 32px 36px;
-    border-right: 2px solid var(--border);
-    display: flex;
-    flex-direction: column;
-    gap: 24px;
-  }
-
-  .section-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.7rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: 8px;
-  }
-
-  textarea {
-    width: 100%;
-    min-height: 130px;
-    background: #fff;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    padding: 14px 16px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.95rem;
-    color: var(--ink);
-    resize: vertical;
-    outline: none;
-    transition: border-color 0.2s;
-    line-height: 1.6;
-  }
-  textarea:focus { border-color: var(--accent); }
-
-  /* Quick presets */
-  .presets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-  .preset-btn {
-    background: var(--panel);
-    border: 1.5px solid var(--border);
-    border-radius: 3px;
-    padding: 4px 10px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--ink);
-    cursor: pointer;
-    transition: all 0.15s;
-  }
-  .preset-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-
-  /* Style controls */
-  .style-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 16px;
-  }
-  .field { display: flex; flex-direction: column; gap: 6px; }
-  .field label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-    letter-spacing: 0.06em;
-  }
-  input[type="color"] {
-    width: 100%;
-    height: 36px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    padding: 2px 4px;
-    cursor: pointer;
-    background: #fff;
-  }
-  input[type="range"] {
-    width: 100%;
-    accent-color: var(--accent);
-  }
-  select {
-    width: 100%;
-    padding: 8px 10px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    background: #fff;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.85rem;
-    color: var(--ink);
-    outline: none;
-    cursor: pointer;
-  }
-  select:focus { border-color: var(--accent); }
-
-  .value-display {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.75rem;
-    color: var(--accent);
-    text-align: right;
-  }
-
-  /* Background toggle */
-  .bg-toggle {
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-  }
-  .bg-opt {
-    flex: 1;
-    min-width: 80px;
-    padding: 8px 6px;
-    border: 1.5px solid var(--border);
-    border-radius: 4px;
-    text-align: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    cursor: pointer;
-    transition: all 0.15s;
-    user-select: none;
-  }
-  .bg-opt.active { border-color: var(--accent); color: var(--accent); background: rgba(200,133,58,0.08); }
-  .bg-opt:hover:not(.active) { border-color: var(--muted); }
-
-  /* Custom bg color (shown when bg=custom) */
-  #customBgRow { display: none; }
-
-  /* Export buttons */
-  .export-row {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-  }
-  .btn {
-    flex: 1;
-    padding: 11px 16px;
-    border: none;
-    border-radius: 4px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    font-weight: 600;
-    cursor: pointer;
-    letter-spacing: 0.04em;
-    transition: all 0.18s;
-  }
-  .btn-primary {
-    background: var(--accent);
-    color: #fff;
-  }
-  .btn-primary:hover { background: #b5722e; }
-  .btn-secondary {
-    background: var(--panel);
-    color: var(--ink);
-    border: 1.5px solid var(--border);
-  }
-  .btn-secondary:hover { background: var(--accent2); color: #fff; border-color: var(--accent2); }
-
-  /* ── Right panel: preview ── */
-  .preview-panel {
-    padding: 32px 36px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  .preview-wrap {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1.5px solid var(--border);
-    border-radius: 6px;
-    min-height: 260px;
-    position: relative;
-    overflow: hidden;
-  }
-  /* checkerboard for transparency */
-  .preview-wrap.transparent-bg {
-    background-image:
-      linear-gradient(45deg, #ccc 25%, transparent 25%),
-      linear-gradient(-45deg, #ccc 25%, transparent 25%),
-      linear-gradient(45deg, transparent 75%, #ccc 75%),
-      linear-gradient(-45deg, transparent 75%, #ccc 75%);
-    background-size: 16px 16px;
-    background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
-    background-color: #fff;
-  }
-
-  #previewInner {
-    padding: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    max-width: 100%;
-    overflow: auto;
-  }
-
-  #formula-render {
-    max-width: 100%;
-  }
-
-  .error-msg {
-    color: #c0392b;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.8rem;
-    padding: 8px;
-    background: rgba(192,57,43,0.08);
-    border-radius: 4px;
-    display: none;
-  }
-
-  /* info strip */
-  .info-strip {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--muted);
-    border-top: 1px solid var(--border);
-    padding-top: 12px;
-    line-height: 1.7;
-  }
-  .info-strip strong { color: var(--accent); }
-
-  /* Padding control */
-  .full-field { grid-column: 1/-1; }
-
-  /* ── Responsive ── */
-  @media (max-width: 780px) {
-    main { grid-template-columns: 1fr; }
-    .controls { border-right: none; border-bottom: 2px solid var(--border); }
-  }
-</style>
+<!-- MathJax 3 with extended packages (Module 2: more LaTeX support) -->
+<script>
+  MathJax = {
+    loader: {
+      load: ['[tex]/ams', '[tex]/mhchem', '[tex]/cancel', '[tex]/color', '[tex]/boldsymbol', '[tex]/braket', '[tex]/physics', '[tex]/empheq', '[tex]/unicode']
+    },
+    tex: {
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      packages: {
+        '[+]': [
+          'ams',          // AMS math environments: align, gather, multline, cases
+          'mhchem',       // Chemical equations: \ce{H2O}
+          'cancel',       // \cancel, \bcancel, \xcancel
+          'color',        // \color, \textcolor, \colorbox
+          'boldsymbol',   // Bold math symbols
+          'braket',       // Quantum bra-ket: \bra, \ket, \braket
+          'physics',      // Physics: \dv, \pdv, \grad, \curl
+          'empheq',       // Emphasize equation environments
+          'unicode',      // Unicode math character support
+        ]
+      },
+      macros: {
+        // Filled at runtime by MacroManager
+      }
+    },
+    svg: {
+      fontCache: 'global'
+    },
+    startup: {
+      typeset: false
+    }
+  };
+</script>
+<script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
 </head>
 <body>
 
 <header>
-  <h1>LaTeX <span>公式</span> 导出器</h1>
-  <p>→ 透明背景 · 自定义字体色 · PNG / SVG 导出</p>
+  <h1>LaTeX <span>公式</span> 预览导出器</h1>
+  <p>→ 透明背景 · 自由字体 · 自建命令 · 图灵完备预处理 · PNG / SVG 导出</p>
 </header>
 
 <main>
-  <!-- LEFT: Controls -->
+  <!-- ═══════════════════ LEFT PANEL: Controls ═══════════════════ -->
   <div class="controls">
 
+    <!-- ── LaTeX Input ── -->
     <div>
       <div class="section-label">LaTeX 公式</div>
       <textarea id="latexInput" placeholder="输入 LaTeX，例如：E = mc^2">\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}</textarea>
     </div>
 
+    <!-- ── Quick Presets (Extended: Module 2) ── -->
     <div>
       <div class="section-label">快速示例</div>
       <div class="presets">
@@ -313,23 +73,31 @@
         <span class="preset-btn" data-latex="i\hbar\frac{\partial}{\partial t}\Psi = \hat{H}\Psi">薛定谔</span>
         <span class="preset-btn" data-latex="\sum_{n=1}^{\infty}\frac{1}{n^2}=\frac{\pi^2}{6}">巴塞尔</span>
         <span class="preset-btn" data-latex="\nabla \cdot \mathbf{E} = \frac{\rho}{\varepsilon_0}">麦克斯韦</span>
-        <span class="preset-btn" data-latex="\frac{d}{dx}\left(\int_a^x f(t)\,dt\right)=f(x)">微积分基本定理</span>
+        <span class="preset-btn" data-latex="\frac{d}{dx}\left(\int_a^x f(t)\,dt\right)=f(x)">微积分</span>
         <span class="preset-btn" data-latex="x = \frac{-b \pm \sqrt{b^2-4ac}}{2a}">求根公式</span>
         <span class="preset-btn" data-latex="e^{i\pi}+1=0">欧拉恒等式</span>
       </div>
+      <div class="presets" style="margin-top:6px;">
+        <span class="preset-btn category">更多</span>
+        <span class="preset-btn" data-latex="\ce{H2O + CO2 -> H2CO3}">化学</span>
+        <span class="preset-btn" data-latex="\begin{pmatrix} a & b \\ c & d \end{pmatrix}">矩阵</span>
+        <span class="preset-btn" data-latex="\bra{\psi}\hat{H}\ket{\psi}">量子态</span>
+        <span class="preset-btn" data-latex="f(x)=\begin{cases} 0 & x<0 \\ 1 & x\ge0 \end{cases}">分段函数</span>
+        <span class="preset-btn" data-latex="\cancel{x}+\bcancel{y}+\xcancel{z}">消去符号</span>
+        <span class="preset-btn" data-latex="\dv[2]{y}{x}+\omega^2 y=0">简谐振动</span>
+        <span class="preset-btn" data-latex="\grad\cdot\mathbf{B}=0">高斯磁定律</span>
+      </div>
     </div>
 
+    <!-- ── Formula Color ── -->
     <div class="style-grid">
       <div class="field">
         <label>公式颜色</label>
         <input type="color" id="formulaColor" value="#1a1a2e">
       </div>
-      <div class="field">
-        <label>背景模式</label>
-        <!-- handled below -->
-      </div>
     </div>
 
+    <!-- ── Background Mode ── -->
     <div>
       <div class="section-label">背景模式</div>
       <div class="bg-toggle">
@@ -339,12 +107,12 @@
         <div class="bg-opt" data-bg="custom">自定义</div>
       </div>
     </div>
-
     <div id="customBgRow" class="field">
       <label>自定义背景色</label>
       <input type="color" id="bgColor" value="#f5f0e8">
     </div>
 
+    <!-- ── Sliders ── -->
     <div class="style-grid">
       <div class="field">
         <label>字体大小</label>
@@ -365,6 +133,145 @@
       </div>
     </div>
 
+    <!-- ══════════════════ Module 1: Font Selection ══════════════════ -->
+    <div>
+      <div class="collapsible-header">
+        <div class="section-label">🔤 字体选择（模块一）</div>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="collapsible-body font-section">
+        <div class="font-row">
+          <div class="field">
+            <label>预设字体</label>
+            <select id="fontSelect"></select>
+          </div>
+          <div class="field" style="min-width:80px;">
+            <label>粗细</label>
+            <select id="fontWeightSelect">
+              <option value="100">Thin</option>
+              <option value="300">Light</option>
+              <option value="400" selected>Regular</option>
+              <option value="500">Medium</option>
+              <option value="600">Semi Bold</option>
+              <option value="700">Bold</option>
+              <option value="900">Black</option>
+            </select>
+          </div>
+          <div class="field" style="min-width:80px;">
+            <label>样式</label>
+            <select id="fontStyleSelect">
+              <option value="normal" selected>Normal</option>
+              <option value="italic">Italic</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="section-label" style="margin-top:4px;">Google Fonts 导入</div>
+        <div class="font-import-row">
+          <input type="text" id="googleFontInput" placeholder="字体名称，如 Noto Serif SC">
+          <button class="btn btn-secondary btn-small" id="googleFontBtn">加载</button>
+        </div>
+
+        <div class="section-label" style="margin-top:4px;">URL 导入字体文件</div>
+        <div class="font-import-row">
+          <input type="text" id="urlFontNameInput" placeholder="字体名称（可选）" style="min-width:100px;">
+          <input type="text" id="urlFontInput" placeholder="https://...font.woff2">
+          <button class="btn btn-secondary btn-small" id="urlFontBtn">加载</button>
+        </div>
+
+        <div class="section-label" style="margin-top:4px;">拖拽上传字体文件</div>
+        <div class="drop-zone" id="fontDropZone">
+          📁 拖拽 .woff2 / .ttf / .otf 文件到此处（或点击选择）
+        </div>
+        <div id="fontStatus"></div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ Module 3: Custom Macros ══════════════════ -->
+    <div>
+      <div class="collapsible-header">
+        <div class="section-label">📝 自定义命令 \\newcommand（模块三）</div>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="collapsible-body macro-section">
+        <div class="macro-input-row">
+          <div class="field">
+            <label>命令名</label>
+            <input type="text" id="macroNameInput" placeholder="如 R / norm">
+          </div>
+          <div class="field">
+            <label>参数个数</label>
+            <input type="number" id="macroArgInput" value="0" min="0" max="9" style="width:100%;padding:7px 10px;border:1.5px solid var(--border);border-radius:4px;font-family:'JetBrains Mono',monospace;font-size:0.82rem;">
+          </div>
+          <div class="field" style="flex:2">
+            <label>定义</label>
+            <input type="text" id="macroDefInput" placeholder="如 \\mathbb{R} 或 \\left\\|#1\\right\\|">
+          </div>
+          <button class="btn btn-primary btn-small" id="macroAddBtn" style="margin-bottom:1px;">＋ 添加</button>
+        </div>
+
+        <div class="section-label" style="margin-top:2px;">预设模板</div>
+        <div class="macro-presets-row">
+          <span class="macro-preset" data-name="R" data-def="\mathbb{R}" data-args="0">\R → 实数</span>
+          <span class="macro-preset" data-name="Z" data-def="\mathbb{Z}" data-args="0">\Z → 整数</span>
+          <span class="macro-preset" data-name="N" data-def="\mathbb{N}" data-args="0">\N → 自然数</span>
+          <span class="macro-preset" data-name="Q" data-def="\mathbb{Q}" data-args="0">\Q → 有理数</span>
+          <span class="macro-preset" data-name="norm" data-def="\left\|#1\right\|" data-args="1">\norm{·} → 范数</span>
+          <span class="macro-preset" data-name="abs" data-def="\left|#1\right|" data-args="1">\abs{·} → 绝对值</span>
+          <span class="macro-preset" data-name="inner" data-def="\langle#1,#2\rangle" data-args="2">\inner{·}{·} → 内积</span>
+          <span class="macro-preset" data-name="dd" data-def="\frac{\mathrm{d}#1}{\mathrm{d}#2}" data-args="2">\dd{·}{·} → 导数</span>
+          <span class="macro-preset" data-name="pdd" data-def="\frac{\partial#1}{\partial#2}" data-args="2">\pdd{·}{·} → 偏导</span>
+        </div>
+
+        <div class="section-label" style="margin-top:2px;">已定义宏</div>
+        <div class="macro-tags" id="macroTags">
+          <span style="color:var(--muted);font-size:0.7rem;">暂无自定义宏</span>
+        </div>
+
+        <div class="macro-import-row">
+          <button class="btn btn-secondary btn-small" id="macroExportBtn" style="flex:1;">📤 导出 JSON</button>
+          <button class="btn btn-secondary btn-small" id="macroImportBtn" style="flex:1;">📥 导入 JSON</button>
+          <button class="btn btn-secondary btn-small" id="macroClearBtn" style="flex:0;">🗑 清除</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════ Module 4: Turing-complete Preprocessor ══════════════════ -->
+    <div>
+      <div class="collapsible-header">
+        <div class="section-label">🧠 预处理器 / 图灵完备（模块四）<span class="pp-badge">NEW</span></div>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="collapsible-body preprocessor-section">
+        <div class="toggle-row">
+          <label class="toggle-switch">
+            <input type="checkbox" id="scriptToggle">
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">启用预处理器（脚本模式）</span>
+        </div>
+        <p style="font-size:0.7rem;color:var(--muted);line-height:1.5;margin-top:4px;">
+          支持的指令：<br>
+          <code>\defvar{name}{value}</code> — 定义变量 ·
+          <code>\usevar{name}</code> — 引用变量<br>
+          <code>\ifcond{expr}{true}{false}</code> — 条件分支（==, !=, &gt;, &lt;, &gt;=, &lt;=）<br>
+          <code>\forloop{var}{start}{end}{step}{body}</code> — 循环展开<br>
+          <code>\eval{expression}</code> — 算术求值（+ - * / ^）<br>
+          <code>\concat{a}{b}</code> — 字符串拼接 ·
+          <code>\rep{text}{n}</code> — 重复 n 次
+        </p>
+
+        <div class="section-label" style="margin-top:4px;">图灵完备演示示例</div>
+        <div class="presets">
+          <span class="preset-btn pp-preset-btn" data-code="\defvar{p}{5}\forloop{i}{1}{\usevar{p}}{1}{\concat{\usevar{i}}{ \times \usevar{p} = \eval{\usevar{i}*\usevar{p}} \\}}">5×乘法表</span>
+          <span class="preset-btn pp-preset-btn" data-code="\defvar{n}{10}\defvar{a}{0}\defvar{b}{1}\forloop{i}{1}{\usevar{n}}{1}{\defvar{tmp}{\usevar{b}}\defvar{b}{\eval{\usevar{a}+\usevar{b}}}\defvar{a}{\usevar{tmp}}\concat{F_{\usevar{i}}=\usevar{a}}{, }}">斐波那契</span>
+          <span class="preset-btn pp-preset-btn" data-code="\defvar{score}{85}\ifcond{\usevar{score}>=90}{A+级}{\ifcond{\usevar{score}>=80}{B+级}{C级}}">条件分级</span>
+          <span class="preset-btn pp-preset-btn" data-code="\defvar{n}{6}\forloop{i}{1}{\usevar{n}}{1}{\concat{\rep{#}{\usevar{i}}}{ \\}}">三角形图案</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Export Buttons ── -->
     <div class="export-row">
       <button class="btn btn-primary" id="exportBtn">⬇ 导出图片</button>
       <button class="btn btn-secondary" id="copyBtn">⎘ 复制 SVG</button>
@@ -372,7 +279,7 @@
 
   </div>
 
-  <!-- RIGHT: Preview -->
+  <!-- ═══════════════════ RIGHT PANEL: Preview ═══════════════════ -->
   <div class="preview-panel">
     <div class="section-label">实时预览</div>
     <div class="preview-wrap transparent-bg" id="previewWrap">
@@ -381,7 +288,7 @@
       </div>
     </div>
     <div class="error-msg" id="errorMsg"></div>
-    <div class="info-strip">
+    <div class="info-strip" id="infoStrip">
       <strong>提示：</strong>选择「透明」背景后导出 PNG，公式周围无底色，可直接叠加在任意图片或幻灯片上。<br>
       SVG 为矢量格式，缩放不失真。
     </div>
@@ -391,271 +298,15 @@
 <!-- Hidden canvas for PNG export -->
 <canvas id="exportCanvas" style="display:none;"></canvas>
 
-<script>
-// ── State ──
-let currentBg = 'transparent';
+<!-- ═══════════════════ JavaScript Modules ═══════════════════ -->
+<!-- Order matters: data modules first, then render, then UI, then main -->
+<script src="js/font-manager.js"></script>
+<script src="js/macros.js"></script>
+<script src="js/preprocessor.js"></script>
+<script src="js/render.js"></script>
+<script src="js/export.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 
-// ── Elements ──
-const latexInput   = document.getElementById('latexInput');
-const formulaColor = document.getElementById('formulaColor');
-const bgColor      = document.getElementById('bgColor');
-const fontSizeEl   = document.getElementById('fontSize');
-const paddingEl    = document.getElementById('padding');
-const fontSizeVal  = document.getElementById('fontSizeVal');
-const paddingVal   = document.getElementById('paddingVal');
-const previewWrap  = document.getElementById('previewWrap');
-const previewInner = document.getElementById('previewInner');
-const formulaRender = document.getElementById('formula-render');
-const errorMsg     = document.getElementById('errorMsg');
-const exportFormat = document.getElementById('exportFormat');
-const customBgRow  = document.getElementById('customBgRow');
-
-// ── Render ──
-let renderTimeout;
-function scheduleRender() {
-  clearTimeout(renderTimeout);
-  renderTimeout = setTimeout(renderFormula, 200);
-}
-
-async function renderFormula() {
-  errorMsg.style.display = 'none';
-  const latex = latexInput.value.trim() || 'E=mc^2';
-  const size  = fontSizeEl.value;
-  const pad   = paddingEl.value;
-  const color = formulaColor.value;
-
-  // Update preview padding
-  previewInner.style.padding = pad + 'px';
-
-  // Render via MathJax
-  try {
-    // Clear previous
-    formulaRender.innerHTML = '';
-
-    // Use MathJax to generate SVG
-    const svg = await MathJax.tex2svgPromise(latex, { display: true });
-    const svgEl = svg.querySelector('svg');
-    if (!svgEl) throw new Error('渲染失败');
-
-    // Scale
-    svgEl.style.fontSize = size + 'px';
-    svgEl.style.color = color;
-    svgEl.setAttribute('color', color);
-
-    // Force color on all children
-    svgEl.querySelectorAll('[fill]').forEach(el => {
-      if (el.getAttribute('fill') !== 'none') el.setAttribute('fill', color);
-    });
-    svgEl.querySelectorAll('[stroke]').forEach(el => {
-      if (el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', color);
-    });
-
-    formulaRender.appendChild(svgEl.cloneNode(true));
-  } catch(e) {
-    errorMsg.textContent = '公式解析错误：' + e.message;
-    errorMsg.style.display = 'block';
-  }
-}
-
-// ── Background ──
-function applyBg() {
-  // Preview wrap background
-  previewWrap.className = 'preview-wrap';
-  if (currentBg === 'transparent') {
-    previewWrap.classList.add('transparent-bg');
-    previewInner.style.background = 'transparent';
-  } else if (currentBg === 'white') {
-    previewInner.style.background = '#ffffff';
-    previewWrap.style.background = '#fff';
-  } else if (currentBg === 'black') {
-    previewInner.style.background = '#000000';
-    previewWrap.style.background = '#000';
-  } else {
-    previewInner.style.background = bgColor.value;
-    previewWrap.style.background = bgColor.value;
-  }
-}
-
-document.querySelectorAll('.bg-opt').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.bg-opt').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    currentBg = btn.dataset.bg;
-    customBgRow.style.display = currentBg === 'custom' ? 'flex' : 'none';
-    applyBg();
-  });
-});
-
-bgColor.addEventListener('input', applyBg);
-
-// ── Sliders ──
-fontSizeEl.addEventListener('input', () => {
-  fontSizeVal.textContent = fontSizeEl.value + 'px';
-  scheduleRender();
-});
-paddingEl.addEventListener('input', () => {
-  paddingVal.textContent = paddingEl.value + 'px';
-  scheduleRender();
-});
-
-// ── Color ──
-formulaColor.addEventListener('input', scheduleRender);
-
-// ── Presets ──
-document.querySelectorAll('.preset-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    latexInput.value = btn.dataset.latex;
-    scheduleRender();
-  });
-});
-
-latexInput.addEventListener('input', scheduleRender);
-
-// ── Get current SVG with color applied ──
-function getStyledSVG() {
-  const svgEl = formulaRender.querySelector('svg');
-  if (!svgEl) return null;
-  const clone = svgEl.cloneNode(true);
-  const color = formulaColor.value;
-  clone.querySelectorAll('[fill]').forEach(el => {
-    if (el.getAttribute('fill') !== 'none') el.setAttribute('fill', color);
-  });
-  clone.querySelectorAll('[stroke]').forEach(el => {
-    if (el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', color);
-  });
-  return clone;
-}
-
-// ── Export PNG ──
-async function exportPNG() {
-  const svgEl = getStyledSVG();
-  if (!svgEl) return alert('请先输入有效的公式');
-
-  const pad = parseInt(paddingEl.value);
-
-  // Get natural size
-  const vb = svgEl.getAttribute('viewBox');
-  let w, h;
-  if (vb) {
-    const parts = vb.split(/\s+/);
-    w = parseFloat(parts[2]);
-    h = parseFloat(parts[3]);
-  } else {
-    w = parseFloat(svgEl.getAttribute('width') || 200);
-    h = parseFloat(svgEl.getAttribute('height') || 80);
-  }
-
-  const scale = parseInt(fontSizeEl.value) / 16; // relative to 16px base
-  const canvasW = Math.ceil(w * scale + pad * 2);
-  const canvasH = Math.ceil(h * scale + pad * 2);
-
-  const canvas = document.getElementById('exportCanvas');
-  canvas.width  = canvasW;
-  canvas.height = canvasH;
-  const ctx = canvas.getContext('2d');
-  ctx.clearRect(0, 0, canvasW, canvasH);
-
-  // Background
-  if (currentBg !== 'transparent') {
-    ctx.fillStyle = currentBg === 'white' ? '#ffffff'
-                  : currentBg === 'black' ? '#000000'
-                  : bgColor.value;
-    ctx.fillRect(0, 0, canvasW, canvasH);
-  }
-
-  // Serialize SVG
-  svgEl.setAttribute('width',  w * scale);
-  svgEl.setAttribute('height', h * scale);
-  const xml = new XMLSerializer().serializeToString(svgEl);
-  const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
-  const url  = URL.createObjectURL(blob);
-
-  const img = new Image();
-  img.onload = () => {
-    ctx.drawImage(img, pad, pad, w * scale, h * scale);
-    URL.revokeObjectURL(url);
-    const link = document.createElement('a');
-    link.download = 'formula.png';
-    link.href = canvas.toDataURL('image/png');
-    link.click();
-  };
-  img.src = url;
-}
-
-// ── Export SVG ──
-function exportSVG() {
-  const svgEl = getStyledSVG();
-  if (!svgEl) return alert('请先输入有效的公式');
-
-  const pad = parseInt(paddingEl.value);
-  const scale = parseInt(fontSizeEl.value) / 16;
-  const vb = svgEl.getAttribute('viewBox');
-  let w = 200, h = 80;
-  if (vb) {
-    const parts = vb.split(/\s+/);
-    w = parseFloat(parts[2]);
-    h = parseFloat(parts[3]);
-  }
-  const sw = w * scale, sh = h * scale;
-  const totalW = sw + pad * 2, totalH = sh + pad * 2;
-
-  const wrapper = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  wrapper.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
-  wrapper.setAttribute('width', totalW);
-  wrapper.setAttribute('height', totalH);
-  wrapper.setAttribute('viewBox', `0 0 ${totalW} ${totalH}`);
-
-  if (currentBg !== 'transparent') {
-    const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-    rect.setAttribute('width', totalW);
-    rect.setAttribute('height', totalH);
-    rect.setAttribute('fill', currentBg === 'white' ? '#ffffff'
-                            : currentBg === 'black' ? '#000000'
-                            : bgColor.value);
-    wrapper.appendChild(rect);
-  }
-
-  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-  g.setAttribute('transform', `translate(${pad}, ${pad}) scale(${scale})`);
-  svgEl.setAttribute('width', w);
-  svgEl.setAttribute('height', h);
-  g.appendChild(svgEl);
-  wrapper.appendChild(g);
-
-  const xml  = new XMLSerializer().serializeToString(wrapper);
-  const blob = new Blob([xml], { type: 'image/svg+xml' });
-  const link = document.createElement('a');
-  link.download = 'formula.svg';
-  link.href = URL.createObjectURL(blob);
-  link.click();
-}
-
-// ── Copy SVG ──
-async function copySVG() {
-  const svgEl = getStyledSVG();
-  if (!svgEl) return;
-  const xml = new XMLSerializer().serializeToString(svgEl);
-  await navigator.clipboard.writeText(xml);
-  const btn = document.getElementById('copyBtn');
-  const orig = btn.textContent;
-  btn.textContent = '✓ 已复制！';
-  setTimeout(() => btn.textContent = orig, 1800);
-}
-
-document.getElementById('exportBtn').addEventListener('click', () => {
-  if (exportFormat.value === 'svg') exportSVG();
-  else exportPNG();
-});
-document.getElementById('copyBtn').addEventListener('click', copySVG);
-
-// ── Init ──
-window.addEventListener('load', () => {
-  applyBg();
-  // Wait for MathJax to load
-  MathJax.startup.promise.then(() => {
-    renderFormula();
-  });
-});
-</script>
 </body>
 </html>
