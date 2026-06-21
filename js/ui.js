@@ -19,10 +19,13 @@ const UIBindings = {
     SyntaxHighlight.init();
     PreviewZoom.init();
     QuickEdit.init();
+    HistoryManager.initUI();
     if (App.fontManager)  App.fontManager.initUI();
     if (App.macroManager) App.macroManager.initUI();
     if (App.preprocessor) App.preprocessor.initUI();
     LaTeXRef.initUI();
+    this.bindDarkModeToggle();
+    this.bindFullscreenPreview();
   },
 
   bindBackgroundToggles() {
@@ -92,6 +95,12 @@ const UIBindings = {
     });
     document.getElementById('copyBtn').addEventListener('click', () => Exporter.copySVG());
     ef.addEventListener('change', () => Storage.saveFromDOM());
+
+    // 新增：复制 LaTeX 源码 / HTML 代码
+    const clb = document.getElementById('copyLatexBtn');
+    const chb = document.getElementById('copyHTMLBtn');
+    if (clb) clb.addEventListener('click', () => Exporter.copyLatex());
+    if (chb) chb.addEventListener('click', () => Exporter.copyHTML());
   },
 
   bindCollapsibles() {
@@ -107,13 +116,72 @@ const UIBindings = {
   bindInputModeSwitch() {
     const ms = document.getElementById('inputModeSelect');
     if (!ms) return;
-    ms.addEventListener('change', () => { App.inputMode = ms.value; Storage.saveAll(); SyntaxHighlight.update(); Renderer.scheduleRender(); });
+    // 恢复之前的模式选择
+    ms.value = App.inputMode;
+    ms.addEventListener('change', () => {
+      App.inputMode = ms.value;
+      Storage.saveAll();
+
+      // B1: 模式切换时清空 MathJax 内部缓存，防止旧模式状态锁死新渲染
+      if (window.MathJax && typeof MathJax.typesetClear === 'function') {
+        MathJax.typesetClear();
+      }
+
+      // B2: 非 LaTeX 模式降级提示
+      if (App.inputMode !== 'latex') {
+        const em = document.getElementById('errorMsg');
+        if (em) {
+          em.textContent = '⚠ 当前仅完全支持 LaTeX 模式。AsciiMath/MathML 模式下将使用 LaTeX 引擎降级渲染，结果可能不符合预期。';
+          em.style.display = 'block';
+        }
+      }
+
+      SyntaxHighlight.update();
+      Renderer.scheduleRender();
+    });
   },
 
   bindKeyboardShortcuts() {
     document.addEventListener('keydown', (e) => {
       if (e.ctrlKey && !e.shiftKey && e.key === 's') { e.preventDefault(); const ef = document.getElementById('exportFormat'); if (ef && ef.value === 'svg') Exporter.exportSVG(); else Exporter.exportPNG(); }
       if (e.ctrlKey && e.shiftKey && (e.key === 'C' || e.key === 'c')) { e.preventDefault(); Exporter.copySVG(); }
+      // Ctrl+Shift+L: 复制 LaTeX 源码
+      if (e.ctrlKey && e.shiftKey && (e.key === 'L' || e.key === 'l')) { e.preventDefault(); Exporter.copyLatex(); }
+    });
+  },
+
+  // ════════════════════════════════════════════════════════
+  // 深色模式切换
+  // ════════════════════════════════════════════════════════
+  bindDarkModeToggle() {
+    const btn = document.getElementById('darkModeBtn');
+    if (!btn) return;
+    // 恢复之前的状态
+    if (App.darkMode) document.documentElement.classList.add('dark');
+    btn.addEventListener('click', () => {
+      App.darkMode = !App.darkMode;
+      document.documentElement.classList.toggle('dark', App.darkMode);
+      btn.textContent = App.darkMode ? '☀' : '🌙';
+      Storage.set('darkMode', App.darkMode);
+    });
+  },
+
+  // ════════════════════════════════════════════════════════
+  // 全屏纯净预览（隐藏左侧控制面板 + header）
+  // ════════════════════════════════════════════════════════
+  bindFullscreenPreview() {
+    const btn = document.getElementById('fullscreenPreviewBtn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      document.body.classList.toggle('fullscreen-preview');
+      btn.textContent = document.body.classList.contains('fullscreen-preview') ? '📋 退出全屏' : '📺 全屏预览';
+    });
+    // ESC 退出全屏预览
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('fullscreen-preview')) {
+        document.body.classList.remove('fullscreen-preview');
+        if (btn) btn.textContent = '📺 全屏预览';
+      }
     });
   }
 };

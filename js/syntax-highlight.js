@@ -19,10 +19,16 @@ const SyntaxHighlight = {
   },
 
   update() {
-    const text = this.textareaEl.value;
-    const html = this._highlight(text);
-    this.highlightEl.innerHTML = html + '\n'; // trailing newline for scroll
-    this.syncScroll();
+    try {
+      const text = this.textareaEl.value;
+      const html = this._highlight(text);
+      this.highlightEl.innerHTML = html + '\n';
+      this.syncScroll();
+    } catch (e) {
+      // 语法高亮崩溃不应影响公式渲染——静默降级为纯文本显示
+      this.highlightEl.textContent = this.textareaEl.value;
+      console.warn('[SyntaxHighlight] 高亮失败，降级为纯文本', e);
+    }
   },
 
   syncScroll() {

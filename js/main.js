@@ -12,6 +12,7 @@ const App = {
   currentFontStyle:  'normal',
   inputMode:        'latex',        // latex | asciimath | mathml
   scriptMode:       false,          // 预处理器开关
+  darkMode:         false,          // 深色模式
   history:          [],             // 最近 20 条公式历史
 
   // ── 子模块引用（init 时实例化）──
@@ -55,13 +56,20 @@ const App = {
 
     // 路径一：MathJax startup promise（如果 MathJax 已经初始化）
     if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
-      MathJax.startup.promise.then(() => doRender()).catch(() => {
-        // 如果 promise reject，回退到轮询
-        this._pollForMathJax(doRender);
-      });
+      MathJax.startup.promise
+        .then(() => {
+          console.log('[MathJax] 主 CDN 加载成功');
+          doRender();
+        })
+        .catch((err) => {
+          // B4: 记录加载失败日志
+          console.warn('[MathJax] 主 CDN 加载失败，回退轮询等待备用 CDN', err);
+          this._pollForMathJax(doRender);
+        });
       // 加保险：5 秒后如果还没渲染，强制轮询
       setTimeout(() => {
         if (!document.getElementById('formula-render').querySelector('svg')) {
+          console.warn('[MathJax] 5 秒超时，强制轮询');
           this._pollForMathJax(doRender);
         }
       }, 5000);

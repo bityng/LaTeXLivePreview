@@ -71,8 +71,6 @@ class MacroManager {
 
   /** Build a MathJax-compatible macros object and inject it */
   injectToMathJax() {
-    // MathJax uses a macros object in the TeX input processor
-    // We need to rebuild the MathJax configuration
     const macrosObj = {};
     this.macros.forEach((val, key) => {
       if (val.argCount === 0) {
@@ -82,15 +80,14 @@ class MacroManager {
       }
     });
 
-    // Update MathJax's tex input processor macros
+    // MathJax 3.x 支持运行时动态更新 macros 配置，
+    // 只需修改 MathJax.config.tex.macros 即可，无需调用 startup.ready()
     if (window.MathJax && MathJax.config && MathJax.config.tex) {
       MathJax.config.tex.macros = macrosObj;
     }
 
-    // Also set via the startup object if available
-    if (window.MathJax && MathJax.startup) {
-      MathJax.startup.ready();
-    }
+    // ⚠️ 故意不调用 MathJax.startup.ready() —— 它会重启内部状态机，
+    // 导致异步渲染 Promise 队列死锁，是高频输入时渲染卡死的根因。
   }
 
   /** Export macros to JSON string */

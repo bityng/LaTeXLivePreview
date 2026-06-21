@@ -68,6 +68,9 @@
 <header>
   <h1>LaTeX <span>公式</span> 预览导出器</h1>
   <p>→ 透明背景 · 自由字体 · 自建命令 · 图灵完备预处理 · PNG / SVG 导出</p>
+  <span style="flex:1;"></span>
+  <button class="btn btn-secondary btn-small" id="fullscreenPreviewBtn" style="flex:0;font-size:0.7rem;" title="全屏纯净预览">📺 全屏预览</button>
+  <button class="btn btn-secondary btn-small" id="darkModeBtn" style="flex:0;font-size:0.7rem;width:32px;padding:5px 0;" title="切换深色模式">🌙</button>
 </header>
 
 <main>
@@ -350,6 +353,26 @@
     <div class="export-row">
       <button class="btn btn-primary" id="exportBtn">⬇ 导出图片</button>
       <button class="btn btn-secondary" id="copyBtn">⎘ 复制 SVG</button>
+    </div>
+    <div class="export-row" style="margin-top:2px;">
+      <button class="btn btn-secondary btn-small" id="copyLatexBtn" style="flex:1;font-size:0.65rem;">📋 复制 LaTeX 源码</button>
+      <button class="btn btn-secondary btn-small" id="copyHTMLBtn" style="flex:1;font-size:0.65rem;">📋 复制 HTML 代码</button>
+    </div>
+
+    <!-- ══════════════════ History Panel ══════════════════ -->
+    <div>
+      <div class="collapsible-header">
+        <div class="section-label">🕐 历史记录 (<span id="historyCount">0</span>)</div>
+        <span class="collapse-icon">▼</span>
+      </div>
+      <div class="collapsible-body">
+        <div class="history-list" id="historyList">
+          <span style="color:var(--muted);font-size:0.65rem;">暂无历史记录，输入公式后将自动保存</span>
+        </div>
+        <div style="margin-top:6px;display:flex;gap:4px;">
+          <button class="btn btn-secondary btn-small" id="historyClearBtn" style="flex:0;font-size:0.62rem;">🗑 清空历史</button>
+        </div>
+      </div>
     </div>
 
   </div>

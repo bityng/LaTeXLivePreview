@@ -118,9 +118,32 @@ const Exporter = {
     if (!svgEl) return;
     const xml = new XMLSerializer().serializeToString(svgEl);
     await navigator.clipboard.writeText(xml);
-    const btn = document.getElementById('copyBtn');
+    this._flashBtn('copyBtn', '✓ 已复制！');
+  },
+
+  /** Copy raw LaTeX source to clipboard */
+  async copyLatex() {
+    const ta = document.getElementById('latexInput');
+    if (!ta || !ta.value.trim()) return;
+    await navigator.clipboard.writeText(ta.value);
+    this._flashBtn('copyLatexBtn', '✓ LaTeX 已复制！');
+  },
+
+  /** Copy rendered formula as HTML code */
+  async copyHTML() {
+    const svgEl = Renderer.getStyledSVG();
+    if (!svgEl) return;
+    const html = svgEl.outerHTML;
+    await navigator.clipboard.writeText(html);
+    this._flashBtn('copyHTMLBtn', '✓ HTML 已复制！');
+  },
+
+  /** Flash a button text temporarily */
+  _flashBtn(btnId, text) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
     const orig = btn.textContent;
-    btn.textContent = '✓ 已复制！';
-    setTimeout(() => btn.textContent = orig, 1800);
+    btn.textContent = text;
+    setTimeout(() => btn.textContent = orig, 1600);
   }
 };

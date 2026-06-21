@@ -20,6 +20,7 @@ const Storage = {
     currentFontStyle: 'normal',
     inputMode: 'latex',       // latex | asciimath | mathml
     scriptMode: false,
+    darkMode: false,
     history: [],              // 最近 20 条公式
   },
 
@@ -62,6 +63,7 @@ const Storage = {
     App.currentFontStyle  = this.get('currentFontStyle');
     App.inputMode        = this.get('inputMode');
     App.scriptMode       = this.get('scriptMode');
+    App.darkMode         = this.get('darkMode');
     App.history          = this.get('history') || [];
   },
 
@@ -76,6 +78,7 @@ const Storage = {
     this.set('currentFontStyle', App.currentFontStyle);
     this.set('inputMode', App.inputMode);
     this.set('scriptMode', App.scriptMode);
+    this.set('darkMode', App.darkMode);
     this.set('history', App.history);
   },
 
