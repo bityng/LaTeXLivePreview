@@ -275,5 +275,43 @@ const LaTeXRef = {
     const div = document.createElement('div');
     div.textContent = str;
     return div.innerHTML;
+  },
+
+  /**
+   * 初始化语法参考表的 UI 绑定（按钮、搜索、ESC 关闭）
+   * 由 UIBindings.init() 调用
+   */
+  initUI() {
+    // 打开按钮
+    const refBtn = document.getElementById('refBtn');
+    if (refBtn) {
+      refBtn.addEventListener('click', () => this.open());
+    }
+
+    // 点击遮罩关闭
+    const overlay = document.getElementById('refOverlay');
+    if (overlay) {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) this.close();
+      });
+    }
+
+    // 搜索过滤
+    const searchInput = document.getElementById('refSearchInput');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        this.filter(e.target.value);
+      });
+    }
+
+    // ESC 键关闭
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const refOverlay = document.getElementById('refOverlay');
+        if (refOverlay && refOverlay.classList.contains('active')) {
+          this.close();
+        }
+      }
+    });
   }
 };

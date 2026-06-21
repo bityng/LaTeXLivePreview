@@ -156,4 +156,29 @@ class Preprocessor {
     // If just a number, treat as boolean (nonzero = true)
     return !!this._eval(expr);
   }
+
+  // ════════════════════════════════════════════════════════
+  // UI 绑定（由 UIBindings 调用）
+  // ════════════════════════════════════════════════════════
+  /** 初始化预处理器开关 & 预设按钮 */
+  initUI() {
+    const toggle = document.getElementById('scriptToggle');
+    if (toggle) {
+      toggle.checked = App.scriptMode;
+      toggle.addEventListener('change', () => {
+        App.scriptMode = toggle.checked;
+        Storage.saveAll();
+        Renderer.scheduleRender();
+      });
+    }
+    // 预处理器演示预设按钮
+    document.querySelectorAll('.pp-preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const ta = document.getElementById('latexInput');
+        if (ta) { ta.value = btn.dataset.code || ''; }
+        SyntaxHighlight.update();
+        Renderer.scheduleRender();
+      });
+    });
+  }
 }

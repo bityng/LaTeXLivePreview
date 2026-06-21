@@ -6,7 +6,7 @@
 <title>LaTeX 公式预览导出器 — 图灵完备版</title>
 
 <!-- Fonts -->
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.loli.net/css2?family=Noto+Serif+SC:wght@400;700&family=JetBrains+Mono:wght@400;600&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
 
 <!-- Stylesheet -->
 <link rel="stylesheet" href="css/style.css">
@@ -46,6 +46,22 @@
   };
 </script>
 <script id="MathJax-script" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-svg.js"></script>
+<!-- MathJax CDN fallback: 如果主 CDN 加载失败，切换到备用源 -->
+<script>
+  (function() {
+    var script = document.getElementById('MathJax-script');
+    var tried = false;
+    script.addEventListener('error', function() {
+      if (tried) return;
+      tried = true;
+      var fallback = document.createElement('script');
+      fallback.src = 'https://cdn.bootcdn.net/ajax/libs/mathjax/3.2.2/es5/tex-svg.js';
+      fallback.async = true;
+      fallback.id = 'MathJax-script-fallback';
+      document.head.appendChild(fallback);
+    });
+  })();
+</script>
 </head>
 <body>
 
@@ -140,11 +156,19 @@
       </div>
     </div>
 
-    <!-- ── Formula Color ── -->
+    <!-- ── Formula Color + Input Mode ── -->
     <div class="style-grid">
       <div class="field">
         <label>公式颜色</label>
         <input type="color" id="formulaColor" value="#1a1a2e">
+      </div>
+      <div class="field">
+        <label>输入模式</label>
+        <select id="inputModeSelect">
+          <option value="latex" selected>LaTeX</option>
+          <option value="asciimath">AsciiMath</option>
+          <option value="mathml">MathML</option>
+        </select>
       </div>
     </div>
 
@@ -354,8 +378,9 @@
 <div class="zoom-overlay" id="zoomOverlay">
   <div class="zoom-content" id="zoomContent">
     <button class="zoom-close" id="zoomClose">&times;</button>
+    <button class="zoom-close" id="zoomFullscreen" style="top:12px;right:54px;" title="全屏">⛶</button>
     <div id="zoomRender"></div>
-    <span class="zoom-scale-info" id="zoomScaleInfo">250%</span>
+    <span class="zoom-scale-info" id="zoomScaleInfo">200%</span>
   </div>
 </div>
 
@@ -373,6 +398,9 @@
 </div>
 
 <!-- ═══════════════════ JavaScript Modules ═══════════════════ -->
+<!-- 加载顺序：工具模块 → 数据模块 → UI模块 → 渲染 → 导出 → 主入口 -->
+<script src="js/storage.js"></script>
+<script src="js/history.js"></script>
 <script src="js/font-manager.js"></script>
 <script src="js/macros.js"></script>
 <script src="js/preprocessor.js"></script>

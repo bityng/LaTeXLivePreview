@@ -117,4 +117,116 @@ class MacroManager {
     this.injectToMathJax();
     return count;
   }
+
+  // ════════════════════════════════════════════════════════
+  // UI 绑定（由 UIBindings 调用）—— 定义、添加、删除、导入导出
+  // ════════════════════════════════════════════════════════
+  /** 初始化宏管理区域的 UI 事件 */
+  initUI() {
+    const nameInp  = document.getElementById('macroNameInput');
+    const defInp   = document.getElementById('macroDefInput');
+    const argInp   = document.getElementById('macroArgInput');
+    const addBtn   = document.getElementById('macroAddBtn');
+    const tagsEl   = document.getElementById('macroTags');
+    const expBtn   = document.getElementById('macroExportBtn');
+    const impBtn   = document.getElementById('macroImportBtn');
+    const clrBtn   = document.getElementById('macroClearBtn');
+
+    /** 刷新宏标签显示 */
+    const refreshTags = () => {
+      if (!tagsEl) return;
+      const all = this.getAll();
+      tagsEl.innerHTML = all.map(m =>
+        `<span class="macro-tag" data-name="${m.name}" title="点击编辑 | × 删除">
+          <span class="macro-name">\\${m.name}</span>
+          ${m.argCount > 0 ? `<span style="font-size:0.6rem">[${m.argCount}参]</span>` : ''}
+          <span class="macro-delete">&times;</span>
+        </span>`
+      ).join('') || '<span style="color:var(--muted);font-size:0.7rem;">暂无自定义宏</span>';
+    };
+
+    // 添加宏
+    addBtn.addEventListener('click', () => {
+      const name = nameInp.value.trim();
+      const def  = defInp.value.trim();
+      const argc = parseInt(argInp.value) || 0;
+      if (!name || !def) return;
+      const result = this.addMacro(name, def, argc);
+      if (!result.ok && result.warning) {
+        if (!confirm(result.warning + '\n\n确定要继续吗？')) return;
+        const clean = name.replace(/^\\/, '');
+        this.macros.set(clean, { definition: def, argCount: argc });
+        this.injectToMathJax();
+      }
+      refreshTags();
+      nameInp.value = ''; defInp.value = ''; argInp.value = '0';
+      Renderer.scheduleRender();
+    });
+
+    // 预设宏模板按钮
+    document.querySelectorAll('.macro-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        nameInp.value = btn.dataset.name || '';
+        defInp.value  = btn.dataset.def || '';
+        argInp.value  = btn.dataset.args || '0';
+      });
+    });
+
+    // 导出宏到 JSON 文件
+    expBtn.addEventListener('click', () => {
+      const json = this.exportToJSON();
+      const blob = new Blob([json], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.download = 'latex-macros.json';
+      a.href = URL.createObjectURL(blob);
+      a.click();
+    });
+
+    // 从 JSON 文件导入宏
+    impBtn.addEventListener('click', () => {
+      const inp = document.createElement('input');
+      inp.type = 'file'; inp.accept = '.json';
+      inp.onchange = () => {
+        const file = inp.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const count = this.importFromJSON(e.target.result);
+          refreshTags();
+          Renderer.scheduleRender();
+          alert('已导入 ' + count + ' 个宏定义');
+        };
+        reader.readAsText(file);
+      };
+      inp.click();
+    });
+
+    // 清除所有宏
+    clrBtn.addEventListener('click', () => {
+      if (confirm('确定要清除所有自定义宏吗？')) {
+        this.clearAll();
+        refreshTags();
+        Renderer.scheduleRender();
+      }
+    });
+
+    // 点击标签：编辑或删除
+    tagsEl.addEventListener('click', (e) => {
+      const tag = e.target.closest('.macro-tag');
+      if (!tag) return;
+      const name = tag.dataset.name;
+      if (e.target.classList.contains('macro-delete')) {
+        this.removeMacro(name);
+        refreshTags();
+        Renderer.scheduleRender();
+      } else {
+        const macro = this.macros.get(name);
+        if (macro) {
+          nameInp.value = name;
+          defInp.value  = macro.definition;
+          argInp.value  = macro.argCount;
+        }
+      }
+    });
+  }
 }

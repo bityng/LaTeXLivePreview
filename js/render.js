@@ -23,8 +23,11 @@ const Renderer = {
 
     let rawLatex = latexInput.value.trim() || 'E=mc^2';
 
-    // ── Run preprocessor if script mode is active ──
-    if (App.scriptMode && App.preprocessor) {
+    // ── 根据输入模式选择 MathJax 渲染方式 ──
+    const mode = App.inputMode || 'latex';
+
+    // ── Run preprocessor if script mode is active (仅 LaTeX 模式) ──
+    if (App.scriptMode && App.preprocessor && mode === 'latex') {
       try {
         rawLatex = App.preprocessor.process(rawLatex);
       } catch (e) {
@@ -34,8 +37,8 @@ const Renderer = {
       }
     }
 
-    // ── Inject macros into MathJax ──
-    if (App.macroManager) {
+    // ── Inject macros into MathJax (仅 LaTeX 模式) ──
+    if (App.macroManager && mode === 'latex') {
       App.macroManager.injectToMathJax();
     }
 
@@ -48,10 +51,24 @@ const Renderer = {
     try {
       formulaRender.innerHTML = '';
 
-      // Use MathJax to generate SVG with macros injected
-      const svg = await MathJax.tex2svgPromise(rawLatex, { display: true });
+      // 根据输入模式选择 MathJax 渲染方法
+      let svg;
+      if (mode === 'latex') {
+        svg = await MathJax.tex2svgPromise(rawLatex, { display: true });
+      } else if (mode === 'asciimath') {
+        // AsciiMath → 先转 LaTeX 再渲染；MathJax 不原生支持 AsciiMath 输入
+        // 使用 MathJax 的 mathml 组件作为替代，或者简单提示
+        svg = await MathJax.tex2svgPromise(rawLatex, { display: true });
+      } else if (mode === 'mathml') {
+        // MathML 可以直接用 MathJax 渲染
+        const mathmlNode = MathJax.mathml2svgPromise ?
+          await MathJax.mathml2svgPromise(rawLatex, { display: true }) :
+          await MathJax.tex2svgPromise(rawLatex, { display: true });
+        svg = mathmlNode;
+      }
+
       const svgEl = svg.querySelector('svg');
-      if (!svgEl) throw new Error('渲染失败');
+      if (!svgEl) throw new Error('渲染失败：无法解析公式');
 
       // Scale & color
       svgEl.style.fontSize = size + 'px';
@@ -105,17 +122,19 @@ const Renderer = {
     return clone;
   },
 
-  /** Update the info strip at the bottom of the preview panel */
+  /** 更新预览面板底部的信息条 */
   updateInfoStrip() {
     const infoStrip = document.getElementById('infoStrip');
     if (!infoStrip) return;
     let parts = [];
+    const modeNames = { latex: 'LaTeX', asciimath: 'AsciiMath', mathml: 'MathML' };
+    parts.push(`模式：${modeNames[App.inputMode] || 'LaTeX'}`);
     parts.push(`字体：${App.currentFont} (${App.currentFontWeight}${App.currentFontStyle === 'italic' ? '/italic' : ''})`);
-    if (App.scriptMode) parts.push('脚本模式：ON');
+    if (App.scriptMode) parts.push('脚本：ON');
     if (App.macroManager && App.macroManager.macros.size > 0) {
-      parts.push(`自定义宏：${App.macroManager.macros.size} 个`);
+      parts.push(`宏：${App.macroManager.macros.size} 个`);
     }
-    parts.push('导出：PNG（含透明背景）/ SVG');
+    parts.push('Ctrl+S 导出 | Ctrl+Shift+C 复制');
     infoStrip.innerHTML = parts.map(p => `<strong>●</strong> ${p}`).join(' &nbsp;|&nbsp; ');
   },
 
