@@ -1,24 +1,47 @@
 /* ============================================================
-   syntax-highlight.js — LaTeX Syntax Highlight in Editor
-   Uses transparent-textarea + highlighted-pre overlay technique
+   syntax-highlight.js — LaTeX 编辑器语法高亮
+   使用透明 textarea + 高亮 pre 叠加方案，rAF 节流防止高频重绘
    ============================================================ */
 
 const SyntaxHighlight = {
+
+  /** rAF ID 用于节流，避免每次 input 都重绘 */
+  _rafId: null,
+  /** 是否已有待执行的 update（防重复） */
+  _pending: false,
 
   init() {
     this.highlightEl = document.getElementById('editorHighlight');
     this.textareaEl = document.getElementById('latexInput');
     if (!this.highlightEl || !this.textareaEl) return;
 
-    this.textareaEl.addEventListener('input', () => this.update());
+    // input 事件使用 rAF 节流更新高亮
+    this.textareaEl.addEventListener('input', () => this._scheduleUpdate());
     this.textareaEl.addEventListener('scroll', () => this.syncScroll());
     this.textareaEl.addEventListener('keydown', (e) => this._handleTab(e));
 
-    // Initial highlight
-    this.update();
+    this._executeUpdate();
   },
 
+  /** 调度高亮更新（rAF 节流） */
+  _scheduleUpdate() {
+    if (this._pending) return;           // 已有待执行
+    this._pending = true;
+    this._rafId = requestAnimationFrame(() => {
+      this._pending = false;
+      this._executeUpdate();
+    });
+  },
+
+  /** 立即更新高亮（供外部 insertAtCursor/wrapOrInsert 调用） */
   update() {
+    cancelAnimationFrame(this._rafId);
+    this._pending = false;
+    this._executeUpdate();
+  },
+
+  /** 实际执行高亮渲染 */
+  _executeUpdate() {
     try {
       const text = this.textareaEl.value;
       const html = this._highlight(text);

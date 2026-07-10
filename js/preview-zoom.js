@@ -11,6 +11,10 @@ const PreviewZoom = {
   isDragging: false,
   dragStart: { x: 0, y: 0 },
   lastTrans: { x: 0, y: 0 },
+  /** 事件清理引用（防止内存泄漏） */
+  _boundMove: null,
+  _boundUp: null,
+  _boundEsc: null,
 
   /**
    * 初始化缩放模态框的事件
@@ -52,12 +56,13 @@ const PreviewZoom = {
       if (e.target === overlay) this.close();
     });
 
-    // ESC 关闭
-    document.addEventListener('keydown', (e) => {
+    // ESC 关闭（复用 _boundEsc，确保只注册一次）
+    this._boundEsc = (e) => {
       if (e.key === 'Escape' && overlay.classList.contains('active')) {
         this.close();
       }
-    });
+    };
+    document.addEventListener('keydown', this._boundEsc);
 
     // 滚轮缩放
     zoomContent.addEventListener('wheel', (e) => {
@@ -67,7 +72,7 @@ const PreviewZoom = {
       this._update();
     }, { passive: false });
 
-    // 鼠标拖拽平移
+    // ═══ 拖拽平移：mousemove/mouseup 按需注册/清理，防止全局泄漏 ═══
     zoomContent.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       this.isDragging = true;
@@ -77,20 +82,24 @@ const PreviewZoom = {
       this.lastTrans.y = this.translateY;
       zoomContent.style.cursor = 'grabbing';
       e.preventDefault();
-    });
 
-    window.addEventListener('mousemove', (e) => {
-      if (!this.isDragging) return;
-      this.translateX = this.lastTrans.x + (e.clientX - this.dragStart.x);
-      this.translateY = this.lastTrans.y + (e.clientY - this.dragStart.y);
-      this._update();
-    });
-
-    window.addEventListener('mouseup', () => {
-      if (this.isDragging) {
+      // 动态注册 move/up，mouseup 时清理
+      this._boundMove = (ev) => {
+        if (!this.isDragging) return;
+        this.translateX = this.lastTrans.x + (ev.clientX - this.dragStart.x);
+        this.translateY = this.lastTrans.y + (ev.clientY - this.dragStart.y);
+        this._update();
+      };
+      this._boundUp = () => {
         this.isDragging = false;
         zoomContent.style.cursor = 'default';
-      }
+        window.removeEventListener('mousemove', this._boundMove);
+        window.removeEventListener('mouseup', this._boundUp);
+        this._boundMove = null;
+        this._boundUp = null;
+      };
+      window.addEventListener('mousemove', this._boundMove);
+      window.addEventListener('mouseup', this._boundUp);
     });
 
     // 双击重置

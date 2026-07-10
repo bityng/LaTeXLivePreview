@@ -76,10 +76,33 @@ const Renderer = {
       formulaRender.innerHTML = '';
 
       // ═══ 根据输入模式选择 MathJax 渲染方法（带 8 秒超时保护）═══
+      // tex-svg 组件仅包含 TeX 输入处理器；AsciiMath/MathML 需额外组件
       let svgDoc;
-      const renderPromise = (mode === 'latex' || mode === 'asciimath' || mode === 'mathml')
-        ? MathJax.tex2svgPromise(rawLatex, { display: true })
-        : MathJax.tex2svgPromise(rawLatex, { display: true });
+      let renderPromise;
+
+      if (mode === 'latex') {
+        // LaTeX 模式：使用 tex2svgPromise（tex-svg 组件原生支持）
+        renderPromise = MathJax.tex2svgPromise(rawLatex, { display: true });
+      } else if (mode === 'asciimath') {
+        // AsciiMath 模式：检查 asciimath2svgPromise 是否可用
+        if (typeof MathJax.asciimath2svgPromise === 'function') {
+          renderPromise = MathJax.asciimath2svgPromise(rawLatex, { display: true });
+        } else {
+          // 降级：使用 LaTeX 引擎渲染，并向用户提示
+          renderPromise = MathJax.tex2svgPromise(rawLatex, { display: true });
+        }
+      } else if (mode === 'mathml') {
+        // MathML 模式：检查 mathml2svgPromise 是否可用
+        if (typeof MathJax.mathml2svgPromise === 'function') {
+          renderPromise = MathJax.mathml2svgPromise(rawLatex, { display: true });
+        } else {
+          // 降级：尝试将 MathML 源码作为 LaTeX 处理
+          renderPromise = MathJax.tex2svgPromise(rawLatex, { display: true });
+        }
+      } else {
+        // 未知模式，默认 LaTeX
+        renderPromise = MathJax.tex2svgPromise(rawLatex, { display: true });
+      }
 
       // E1: 8 秒超时保护 —— 如果 MathJax 长时间无响应，自动中断
       const timeoutPromise = new Promise((_, reject) =>
@@ -134,9 +157,72 @@ const Renderer = {
     } catch (e) {
       // ═══ A2: 如果已被取消，不显示错误 ═══
       if (this._aborted || renderId !== this._renderId) return;
-      errorMsg.textContent = '公式解析错误：' + e.message;
+      errorMsg.innerHTML = this._formatError(latexInput.value, e);
       errorMsg.style.display = 'block';
     }
+  },
+
+  /**
+   * 格式化错误信息：友好中文 + 行号定位 + 修复建议
+   * @param {string} source - 原始输入
+   * @param {Error} error - MathJax 抛出的错误
+   * @returns {string} HTML 格式的错误信息
+   */
+  _formatError(source, error) {
+    const errMsg = error.message || '未知错误';
+    const lines = source.split('\n');
+
+    // 尝试从 MathJax 错误中提取位置信息
+    // MathJax 3 错误消息格式示例: "TeX parse error: ..."
+    const parseMatch = errMsg.match(/parse error[:\s]+(.*)/i);
+    const detailedMsg = parseMatch ? parseMatch[1] : errMsg;
+
+    // 构建友好提示
+    let html = '<strong>⚠ 公式解析失败</strong><br>';
+    html += '<span style="color:var(--muted)">原因：</span>' + this._escapeHTML(detailedMsg) + '<br>';
+
+    // 常见错误类型 → 修复建议映射
+    const suggestions = [];
+    if (/Missing\s+\\right/i.test(errMsg) || /Missing\s+\\end/i.test(errMsg)) {
+      suggestions.push('可能缺少配对的 \\right 或 \\end 命令');
+    }
+    if (/Undefined control sequence/i.test(errMsg)) {
+      const cmdMatch = errMsg.match(/Undefined control sequence[:\s]+(\\.+)/i);
+      if (cmdMatch) suggestions.push('命令 <code>' + this._escapeHTML(cmdMatch[1]) + '</code> 未定义，请检查拼写');
+    }
+    if (/Missing\s+\{/i.test(errMsg) || /Missing\s+\}/i.test(errMsg)) {
+      suggestions.push('花括号 {} 不成对，检查是否遗漏');
+    }
+    if (/Extra\s+\}/i.test(errMsg)) {
+      suggestions.push('多余的花括号 }，检查是否写多了');
+    }
+    if (/Missing\s+\$/i.test(errMsg)) {
+      suggestions.push('数学模式 $ 符不成对');
+    }
+    if (/MathJax retry/i.test(errMsg)) {
+      suggestions.push('公式过于复杂，尝试简化或分段输入');
+    }
+    if (suggestions.length === 0) {
+      suggestions.push('检查 LaTeX 命令拼写是否正确');
+      suggestions.push('确保所有花括号 {} 和括号 () 成对出现');
+    }
+
+    html += '<span style="color:var(--muted)">建议：</span>';
+    html += suggestions.map(s => '• ' + s).join('<br>');
+
+    // 显示行号（如果有多行）
+    if (lines.length > 1) {
+      html += '<br><span style="color:var(--muted);font-size:0.62rem;">共 ' + lines.length + ' 行</span>';
+    }
+
+    return html;
+  },
+
+  /** 转义 HTML 特殊字符 */
+  _escapeHTML(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
   },
 
   /** Get the currently rendered SVG element with color applied */
