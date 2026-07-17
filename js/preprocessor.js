@@ -126,10 +126,12 @@ class Preprocessor {
         return token;
       });
       resolved = resolved.replace(/\^/g, '**'); // ^ to ** for exponentiation
-      // Safety: only allow safe arithmetic
-      const safe = resolved.replace(/[^0-9+\-*/().%\s]/g, '');
+      // Safety: allow numbers, operators, and math function names
+      const safe = resolved.replace(/[^0-9+\-*/().%\s|a-zA-Z_]/g, '');
+      // Prepend "Math." to known math functions and constants
+      const finalExpr = safe.replace(/\b(sin|cos|tan|log|sqrt|abs|floor|ceil|round|exp|pow|PI|E)\b/g, 'Math.$1');
       // eslint-disable-next-line no-new-func
-      const result = new Function('return ' + safe)();
+      const result = new Function('return ' + finalExpr)();
       return Number.isFinite(result) ? result : 0;
     } catch (e) {
       return 0;
