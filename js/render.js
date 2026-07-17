@@ -14,6 +14,8 @@ const Renderer = {
   lastRenderTime: 0,
   /** 历史推送防抖定时器 */
   _historyPushTimeout: null,
+  /** MathJax 不可用时的重试计数（最多 30 次 = 15 秒） */
+  _retryCount: 0,
 
   /**
    * 调度渲染（300ms 防抖）
@@ -22,6 +24,7 @@ const Renderer = {
   scheduleRender() {
     clearTimeout(this.renderTimeout);
     this._aborted = true; // 取消上一次未完成的渲染
+    this._retryCount = 0; // 重置重试计数
     this.renderTimeout = setTimeout(() => this.renderFormula(), 300);
   },
 
@@ -29,9 +32,24 @@ const Renderer = {
    * 执行渲染（async，带竞态保护）
    */
   async renderFormula() {
+    // ── MathJax 可用性门禁 ──
+    if (!window.MathJax || typeof MathJax.tex2svgPromise !== 'function') {
+      this._retryCount++;
+      if (this._retryCount > 30) {
+        const errorMsg = document.getElementById('errorMsg');
+        if (errorMsg) {
+          errorMsg.textContent = '⚠ MathJax 引擎加载失败，请刷新页面重试';
+          errorMsg.style.display = 'block';
+        }
+        return;
+      }
+      this.renderTimeout = setTimeout(() => this.renderFormula(), 500);
+      return;
+    }
+
     this._aborted = false;
     const renderId = ++this._renderId;
-    const t0 = performance.now();               // ⏱ 计时开始
+    const t0 = performance.now();
     const errorMsg = document.getElementById('errorMsg');
     const formulaRender = document.getElementById('formula-render');
     const latexInput = document.getElementById('latexInput');
@@ -120,6 +138,7 @@ const Renderer = {
       if (latexInput.value !== snapshot) return;
 
       // 缩放 & 颜色
+      // 仅设置根 SVG 的 color，MathJax 内部 use currentColor 会自动继承
       svgEl.style.fontSize = size + 'px';
       svgEl.style.color = color;
       svgEl.setAttribute('color', color);
@@ -131,12 +150,18 @@ const Renderer = {
         t.setAttribute('font-family', fontFamily);
       });
 
-      // 强制颜色到所有 fill/stroke 属性（排除 fill="none" 的路径）
+      // 颜色处理：仅修改 fill="currentColor" 的元素，保留 MathJax 内部彩色
       svgEl.querySelectorAll('[fill]').forEach(el => {
-        if (el.getAttribute('fill') !== 'none') el.setAttribute('fill', color);
+        const f = el.getAttribute('fill');
+        if (f && f !== 'none' && f === 'currentColor') {
+          el.setAttribute('fill', color);
+        }
       });
       svgEl.querySelectorAll('[stroke]').forEach(el => {
-        if (el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', color);
+        const s = el.getAttribute('stroke');
+        if (s && s !== 'none' && s === 'currentColor') {
+          el.setAttribute('stroke', color);
+        }
       });
 
       // 直接 append
@@ -233,11 +258,18 @@ const Renderer = {
     if (!svgEl) return null;
     const clone = svgEl.cloneNode(true);
     const color = formulaColor.value;
+    // 仅替换 fill="currentColor" 的元素，保留 MathJax 内部彩色
     clone.querySelectorAll('[fill]').forEach(el => {
-      if (el.getAttribute('fill') !== 'none') el.setAttribute('fill', color);
+      const f = el.getAttribute('fill');
+      if (f && f !== 'none' && f === 'currentColor') {
+        el.setAttribute('fill', color);
+      }
     });
     clone.querySelectorAll('[stroke]').forEach(el => {
-      if (el.getAttribute('stroke') !== 'none') el.setAttribute('stroke', color);
+      const s = el.getAttribute('stroke');
+      if (s && s !== 'none' && s === 'currentColor') {
+        el.setAttribute('stroke', color);
+      }
     });
     const fontFamily = `"${App.currentFont}", serif`;
     clone.querySelectorAll('text').forEach(t => {
@@ -270,12 +302,30 @@ const Renderer = {
     const old = document.getElementById('dynamic-font-style');
     if (old) old.remove();
 
-    // If a Google Font is loaded, no extra @font-face needed
-    // For custom fonts managed by FontManager, it already injects its own @font-face
-    // Just apply font-family to the formula render container
+    // Inject font-family CSS rule into the SVG output + container
+    // MathJax SVG uses <use> elements for math glyphs (unaffected by font-family),
+    // but <text> elements for \text{} content DO respond to font-family
+    const styleEl = document.createElement('style');
+    styleEl.id = 'dynamic-font-style';
+    styleEl.textContent = [
+      `#formula-render { font-family: "${fontName}", serif; }`,
+      `#formula-render svg text { font-family: "${fontName}", serif; font-weight: ${weight}; font-style: ${style}; }`,
+      `#formula-render svg { font-weight: ${weight}; font-style: ${style}; }`
+    ].join('\n');
+    document.head.appendChild(styleEl);
+
+    // Also apply directly to the DOM for already-rendered SVG
     const formulaRender = document.getElementById('formula-render');
     if (formulaRender) {
       formulaRender.style.fontFamily = `"${fontName}", serif`;
+      formulaRender.style.fontWeight = weight;
+      formulaRender.style.fontStyle = style;
+      // Update existing <text> elements in rendered SVG
+      const fontFamily = `"${fontName}", serif`;
+      formulaRender.querySelectorAll('svg text').forEach(t => {
+        t.style.fontFamily = fontFamily;
+        t.setAttribute('font-family', fontFamily);
+      });
     }
   }
 };

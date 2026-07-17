@@ -91,11 +91,21 @@ const Storage = {
     const pd = document.getElementById('padding');
     const ef = document.getElementById('exportFormat');
     const bg = document.getElementById('bgColor');
+    const fnt = document.getElementById('fontSelect');
+    const fws = document.getElementById('fontWeightSelect');
+    const fss = document.getElementById('fontStyleSelect');
+    const ims = document.getElementById('inputModeSelect');
+    const st  = document.getElementById('scriptToggle');
     if (fc) this.set('formulaColor', fc.value);
     if (fs) this.set('fontSize', parseInt(fs.value));
     if (pd) this.set('padding', parseInt(pd.value));
     if (ef) this.set('exportFormat', ef.value);
     if (bg) this.set('customBgColor', bg.value);
+    if (fnt) this.set('currentFont', fnt.value);
+    if (fws) this.set('currentFontWeight', parseInt(fws.value) || 400);
+    if (fss) this.set('currentFontStyle', fss.value || 'normal');
+    if (ims) this.set('inputMode', ims.value);
+    if (st) this.set('scriptMode', st.checked);
   },
 
   /**
@@ -109,10 +119,18 @@ const Storage = {
     const bg = document.getElementById('bgColor');
     const fsv = document.getElementById('fontSizeVal');
     const pdv = document.getElementById('paddingVal');
+    const fws = document.getElementById('fontWeightSelect');
+    const fss = document.getElementById('fontStyleSelect');
+    const ims = document.getElementById('inputModeSelect');
+    const st  = document.getElementById('scriptToggle');
     if (fc) fc.value = this.get('formulaColor');
     if (fs) { fs.value = this.get('fontSize'); if (fsv) fsv.textContent = fs.value + 'px'; }
     if (pd) { pd.value = this.get('padding'); if (pdv) pdv.textContent = pd.value + 'px'; }
     if (ef) ef.value = this.get('exportFormat');
     if (bg) bg.value = this.get('customBgColor');
+    if (fws) fws.value = this.get('currentFontWeight');
+    if (fss) fss.value = this.get('currentFontStyle');
+    if (ims) ims.value = this.get('inputMode');
+    if (st) st.checked = this.get('scriptMode');
   }
 };

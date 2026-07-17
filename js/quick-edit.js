@@ -4,17 +4,19 @@
 
 const QuickEdit = {
 
-  /** Initialize toolbar button event listeners */
+  /** 初始化——绑定所有工具栏按钮的点击事件 */
   init() {
     document.querySelectorAll('.qeb-btn[data-insert]').forEach(btn => {
       btn.addEventListener('click', () => {
+        // 防御：SyntaxHighlight 可能未初始化
+        if (!SyntaxHighlight || !SyntaxHighlight.textareaEl) return;
         const action = btn.dataset.insert;
-        this._handleAction(action, btn.dataset.before || '', btn.dataset.after || '');
+        this._handleAction(action);
       });
     });
   },
 
-  _handleAction(action, before, after) {
+  _handleAction(action) {
     switch (action) {
       case 'frac':
         SyntaxHighlight.wrapOrInsert('\\frac{', '}{}');
@@ -107,9 +109,7 @@ const QuickEdit = {
         SyntaxHighlight.insertAtCursor('\\omega ');
         break;
       default:
-        if (before || after) {
-          SyntaxHighlight.wrapOrInsert(before, after);
-        }
+        break;
     }
   }
 };

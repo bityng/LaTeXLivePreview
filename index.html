@@ -13,35 +13,25 @@
 
 <!-- MathJax 3 with extended packages (Module 2: more LaTeX support) -->
 <script>
+  // MathJax 3 配置：仅加载必要的 TeX 扩展
+  // tex-svg 已内置 ams/newcommand 等核心包，此处仅追加可选扩展
   MathJax = {
     loader: {
-      load: ['[tex]/ams', '[tex]/mhchem', '[tex]/cancel', '[tex]/color', '[tex]/boldsymbol', '[tex]/braket', '[tex]/physics', '[tex]/empheq', '[tex]/unicode']
+      load: ['[tex]/mhchem', '[tex]/cancel', '[tex]/color', '[tex]/boldsymbol', '[tex]/braket', '[tex]/physics', '[tex]/empheq']
     },
     tex: {
       displayMath: [['$$', '$$'], ['\\[', '\\]']],
       inlineMath: [['$', '$'], ['\\(', '\\)']],
       packages: {
-        '[+]': [
-          'ams',          // AMS math environments: align, gather, multline, cases
-          'mhchem',       // Chemical equations: \ce{H2O}
-          'cancel',       // \cancel, \bcancel, \xcancel
-          'color',        // \color, \textcolor, \colorbox
-          'boldsymbol',   // Bold math symbols
-          'braket',       // Quantum bra-ket: \bra, \ket, \braket
-          'physics',      // Physics: \dv, \pdv, \grad, \curl
-          'empheq',       // Emphasize equation environments
-          'unicode',      // Unicode math character support
-        ]
+        '[+]': ['mhchem', 'cancel', 'color', 'boldsymbol', 'braket', 'physics', 'empheq']
       },
-      macros: {
-        // Filled at runtime by MacroManager
-      }
+      macros: {}
     },
-    svg: {
-      fontCache: 'global'
-    },
-    startup: {
-      typeset: false
+    svg: { fontCache: 'global' },
+    startup: { typeset: false },
+    options: {
+      enableEnrichment: false,
+      ignoreHtmlClass: 'tex2jax_ignore'
     }
   };
 </script>
@@ -379,6 +369,7 @@
 
   <!-- ═══════════════════ RIGHT PANEL: Preview ═══════════════════ -->
   <div class="preview-panel">
+    <button class="fullscreen-exit-btn" id="fullscreenExitBtn" title="退出全屏预览 (ESC)">✕ 退出全屏</button>
     <div class="section-label">实时预览</div>
     <div class="preview-wrap transparent-bg" id="previewWrap">
       <span class="preview-zoom-hint">🔍 点击放大</span>

@@ -44,37 +44,31 @@ const App = {
 
   /**
    * 等待 MathJax 加载完成
-   * MathJax 的 tex-svg.js 是 async 加载的，可能晚于 main.js 执行
-   * 使用轮询 + promise 双重保障
+   * 优先检测 MathJax.tex2svgPromise 是否可用，不可用则轮询等待
    */
   _waitForMathJaxThenRender() {
+    let rendered = false;
     const doRender = () => {
+      if (rendered) return;
+      rendered = true;
       Renderer.applyFontCSS(this.currentFont, this.currentFontWeight, this.currentFontStyle);
-      SyntaxHighlight.update();
+      if (typeof SyntaxHighlight !== 'undefined') SyntaxHighlight.update();
       Renderer.renderFormula();
     };
 
-    // 路径一：MathJax startup promise（如果 MathJax 已经初始化）
+    // 如果 MathJax 的渲染方法已可用（最快路径）
+    if (window.MathJax && typeof MathJax.tex2svgPromise === 'function') {
+      doRender();
+      return;
+    }
+
+    // 等待 MathJax.startup.promise
     if (window.MathJax && MathJax.startup && MathJax.startup.promise) {
       MathJax.startup.promise
-        .then(() => {
-          console.log('[MathJax] 主 CDN 加载成功');
-          doRender();
-        })
-        .catch((err) => {
-          // B4: 记录加载失败日志
-          console.warn('[MathJax] 主 CDN 加载失败，回退轮询等待备用 CDN', err);
-          this._pollForMathJax(doRender);
-        });
-      // 加保险：5 秒后如果还没渲染，强制轮询
-      setTimeout(() => {
-        if (!document.getElementById('formula-render').querySelector('svg')) {
-          console.warn('[MathJax] 5 秒超时，强制轮询');
-          this._pollForMathJax(doRender);
-        }
-      }, 5000);
+        .then(() => { doRender(); })
+        .catch(() => { this._pollForMathJax(doRender); });
+      setTimeout(() => { if (!rendered) this._pollForMathJax(doRender); }, 8000);
     } else {
-      // 路径二：MathJax 尚未加载（CDN 较慢），轮询等待
       this._pollForMathJax(doRender);
     }
   },

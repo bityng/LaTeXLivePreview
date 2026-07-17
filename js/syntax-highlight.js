@@ -45,12 +45,12 @@ const SyntaxHighlight = {
     try {
       const text = this.textareaEl.value;
       const html = this._highlight(text);
-      this.highlightEl.innerHTML = html + '\n';
+      // 用 innerHTML 写入高亮后的内容
+      this.highlightEl.innerHTML = html;
       this.syncScroll();
     } catch (e) {
-      // 语法高亮崩溃不应影响公式渲染——静默降级为纯文本显示
-      this.highlightEl.textContent = this.textareaEl.value;
-      console.warn('[SyntaxHighlight] 高亮失败，降级为纯文本', e);
+      // 高亮失败时清空 pre（textarea 依然可见，不受影响）
+      this.highlightEl.textContent = '';
     }
   },
 
@@ -59,34 +59,47 @@ const SyntaxHighlight = {
     this.highlightEl.scrollLeft = this.textareaEl.scrollLeft;
   },
 
+  /**
+   * 核心高亮函数：将 LaTeX 源码转为带颜色 span 的 HTML
+   * 注意：只转义 HTML 关键字符，不转义 &（避免破坏 LaTeX 命令）
+   */
   _highlight(text) {
-    // Escape HTML first
-    let escaped = text
+    // 用 textContent 安全赋值来获取纯文本（textarea.value 本身就是纯文本）
+    let out = text
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
 
-    // Comments: % to end of line
-    escaped = escaped.replace(/(%.*)/g, '<span class="hl-cmt">$1</span>');
+    // 注释：% 到行尾 → 绿色斜体
+    out = out.replace(/(%.*)/g, '<span class="hl-cmt">$1</span>');
 
-    // Commands: \word or \word{...} — but be careful not to double-highlight
-    escaped = escaped.replace(/(\\(?:[a-zA-Z]+|.))/g, (match) => {
-      // Skip if already inside a span
-      if (match.includes('<span')) return match;
+    // LaTeX 命令：\ 后跟字母串或单个非字母字符
+    // 先标记已处理的 span 区域，防止后续替换破坏
+    out = out.replace(/(\\(?:[a-zA-Z]+|[^a-zA-Z\s]))/g, (match) => {
+      if (match.includes('&lt;span')) return match;
       return '<span class="hl-cmd">' + match + '</span>';
     });
 
-    // Braces { } — highlight with muted color
-    // Only apply to braces not already in spans
-    escaped = escaped.replace(/(?<!<span[^>]*>)([\{\}])(?!<\/span>)/g, '<span class="hl-brace">$1</span>');
+    // 花括号 { }：灰色
+    out = out.replace(/([\{\}])/g, (match, p1, offset, str) => {
+      // 简易检测：如果前面最近的 < 是 span 开头而非 span 闭合，说明已在 span 内
+      const before = str.substring(Math.max(0, offset - 60), offset);
+      const openCount = (before.match(/<span/gi) || []).length;
+      const closeCount = (before.match(/<\/span>/gi) || []).length;
+      if (openCount > closeCount) return match; // 已在 span 内
+      return '<span class="hl-brace">' + match + '</span>';
+    });
 
-    // Math symbols ^ _
-    escaped = escaped.replace(/(?<!<span[^>]*>)([\^_])(?!<\/span>)/g, '<span class="hl-sym">$1</span>');
+    // 数学符号 ^ _
+    out = out.replace(/([\^_])/g, (match, p1, offset, str) => {
+      const before = str.substring(Math.max(0, offset - 60), offset);
+      const openCount = (before.match(/<span/gi) || []).length;
+      const closeCount = (before.match(/<\/span>/gi) || []).length;
+      if (openCount > closeCount) return match;
+      return '<span class="hl-sym">' + match + '</span>';
+    });
 
-    // Fix nested spans that may have been created: remove empty
-    escaped = escaped.replace(/<span[^>]*><\/span>/g, '');
-
-    return escaped;
+    return out;
   },
 
   _handleTab(e) {
@@ -101,21 +114,23 @@ const SyntaxHighlight = {
     }
   },
 
-  /** Insert text at cursor position and update highlight */
+  /** 向光标处插入文本并更新高亮 */
   insertAtCursor(text) {
     const ta = this.textareaEl;
+    if (!ta) return;
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     ta.value = ta.value.substring(0, start) + text + ta.value.substring(end);
     ta.selectionStart = ta.selectionEnd = start + text.length;
     ta.focus();
     this.update();
-    Renderer.scheduleRender();
+    if (typeof Renderer !== 'undefined') Renderer.scheduleRender();
   },
 
-  /** Wrap selected text or insert template */
+  /** 包裹选中文本或插入模板 */
   wrapOrInsert(before, after = '') {
     const ta = this.textareaEl;
+    if (!ta) return;
     const start = ta.selectionStart;
     const end = ta.selectionEnd;
     const selected = ta.value.substring(start, end);
@@ -125,6 +140,6 @@ const SyntaxHighlight = {
     ta.selectionStart = ta.selectionEnd = newPos;
     ta.focus();
     this.update();
-    Renderer.scheduleRender();
+    if (typeof Renderer !== 'undefined') Renderer.scheduleRender();
   }
 };

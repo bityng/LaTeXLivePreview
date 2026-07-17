@@ -111,7 +111,7 @@ class Preprocessor {
   _resolveVars(str) {
     return str.replace(/\\usevar\{([^}]+)\}/g, (match, name) => {
       const val = this.vars.get(name.trim());
-      return val !== undefined ? String(val) : '0';
+      return val !== undefined ? String(val) : match;
     });
   }
 

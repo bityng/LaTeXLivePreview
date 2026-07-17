@@ -156,8 +156,9 @@ const UIBindings = {
   bindDarkModeToggle() {
     const btn = document.getElementById('darkModeBtn');
     if (!btn) return;
-    // 恢复之前的状态
+    // 恢复之前的状态（包括按钮文字）
     if (App.darkMode) document.documentElement.classList.add('dark');
+    btn.textContent = App.darkMode ? '☀' : '🌙';
     btn.addEventListener('click', () => {
       App.darkMode = !App.darkMode;
       document.documentElement.classList.toggle('dark', App.darkMode);
@@ -171,16 +172,31 @@ const UIBindings = {
   // ════════════════════════════════════════════════════════
   bindFullscreenPreview() {
     const btn = document.getElementById('fullscreenPreviewBtn');
+    const exitBtn = document.getElementById('fullscreenExitBtn');
     if (!btn) return;
+
+    const enterFullscreen = () => {
+      document.body.classList.add('fullscreen-preview');
+      btn.textContent = '📋 退出全屏';
+    };
+    const exitFullscreen = () => {
+      document.body.classList.remove('fullscreen-preview');
+      btn.textContent = '📺 全屏预览';
+    };
+
     btn.addEventListener('click', () => {
-      document.body.classList.toggle('fullscreen-preview');
-      btn.textContent = document.body.classList.contains('fullscreen-preview') ? '📋 退出全屏' : '📺 全屏预览';
+      document.body.classList.contains('fullscreen-preview') ? exitFullscreen() : enterFullscreen();
     });
+
+    // 浮动退出按钮
+    if (exitBtn) {
+      exitBtn.addEventListener('click', exitFullscreen);
+    }
+
     // ESC 退出全屏预览
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && document.body.classList.contains('fullscreen-preview')) {
-        document.body.classList.remove('fullscreen-preview');
-        if (btn) btn.textContent = '📺 全屏预览';
+        exitFullscreen();
       }
     });
   }

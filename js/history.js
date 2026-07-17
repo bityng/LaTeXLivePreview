@@ -41,7 +41,7 @@ const HistoryManager = {
     const items = App.history.slice().reverse();
     listEl.innerHTML = items.map((latex, i) => {
       const origIdx = App.history.length - 1 - i;
-      const preview = latex.replace(/\\/g, '\\\\').replace(/"/g, '&quot;').replace(/</g, '&lt;').substring(0, 60);
+      const preview = latex.replace(/&/g, '&amp;').replace(/\\/g, '\\\\').replace(/"/g, '&quot;').replace(/</g, '&lt;').substring(0, 60);
       return `<div class="history-item" data-idx="${origIdx}" title="点击恢复此公式">
         <span style="color:var(--muted);flex-shrink:0;font-size:0.55rem;">#${origIdx + 1}</span>
         <span style="overflow:hidden;text-overflow:ellipsis;">${preview}${latex.length > 60 ? '…' : ''}</span>

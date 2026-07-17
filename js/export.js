@@ -115,27 +115,67 @@ const Exporter = {
   /** Copy SVG source to clipboard */
   async copySVG() {
     const svgEl = Renderer.getStyledSVG();
-    if (!svgEl) return;
+    if (!svgEl) {
+      this._flashBtn('copyBtn', '⚠ 暂无公式可复制');
+      return;
+    }
     const xml = new XMLSerializer().serializeToString(svgEl);
-    await navigator.clipboard.writeText(xml);
-    this._flashBtn('copyBtn', '✓ 已复制！');
+    try {
+      await navigator.clipboard.writeText(xml);
+      this._flashBtn('copyBtn', '✓ 已复制！');
+    } catch (e) {
+      // 回退：非安全上下文或权限不足时使用 execCommand
+      this._fallbackCopy(xml, 'copyBtn', '✓ 已复制！');
+    }
   },
 
   /** Copy raw LaTeX source to clipboard */
   async copyLatex() {
     const ta = document.getElementById('latexInput');
-    if (!ta || !ta.value.trim()) return;
-    await navigator.clipboard.writeText(ta.value);
-    this._flashBtn('copyLatexBtn', '✓ LaTeX 已复制！');
+    if (!ta || !ta.value.trim()) {
+      this._flashBtn('copyLatexBtn', '⚠ 暂无内容可复制');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(ta.value);
+      this._flashBtn('copyLatexBtn', '✓ LaTeX 已复制！');
+    } catch (e) {
+      this._fallbackCopy(ta.value, 'copyLatexBtn', '✓ LaTeX 已复制！');
+    }
   },
 
   /** Copy rendered formula as HTML code */
   async copyHTML() {
     const svgEl = Renderer.getStyledSVG();
-    if (!svgEl) return;
+    if (!svgEl) {
+      this._flashBtn('copyHTMLBtn', '⚠ 暂无公式可复制');
+      return;
+    }
     const html = svgEl.outerHTML;
-    await navigator.clipboard.writeText(html);
-    this._flashBtn('copyHTMLBtn', '✓ HTML 已复制！');
+    try {
+      await navigator.clipboard.writeText(html);
+      this._flashBtn('copyHTMLBtn', '✓ HTML 已复制！');
+    } catch (e) {
+      this._fallbackCopy(html, 'copyHTMLBtn', '✓ HTML 已复制！');
+    }
+  },
+
+  /** Fallback copy using execCommand for non-secure contexts */
+  _fallbackCopy(text, btnId, successMsg) {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.left = '-9999px';
+      ta.style.top = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      this._flashBtn(btnId, successMsg);
+    } catch (e2) {
+      this._flashBtn(btnId, '⚠ 复制失败');
+    }
   },
 
   /** Flash a button text temporarily */
