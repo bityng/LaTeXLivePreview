@@ -198,6 +198,15 @@
           <option value="png">PNG（透明/实色背景）</option>
           <option value="svg">SVG（矢量，透明背景）</option>
         </select>
+        </div>
+      <div class="field" style="margin-top:6px;">
+        <label>导出缩放</label>
+        <select id="exportScale">
+          <option value="1">1x（标准）</option>
+          <option value="2" selected>2x（高清 Retina）</option>
+          <option value="3">3x（超清）</option>
+          <option value="4">4x（极致）</option>
+        </select>
       </div>
     </div>
 
@@ -347,6 +356,7 @@
     <div class="export-row" style="margin-top:2px;">
       <button class="btn btn-secondary btn-small" id="copyLatexBtn" style="flex:1;font-size:0.65rem;">📋 复制 LaTeX 源码</button>
       <button class="btn btn-secondary btn-small" id="copyHTMLBtn" style="flex:1;font-size:0.65rem;">📋 复制 HTML 代码</button>
+      <button class="btn btn-secondary btn-small" id="shareLinkBtn" style="flex:1;font-size:0.65rem;">🔗 复制分享链接</button>
     </div>
 
     <!-- ══════════════════ History Panel ══════════════════ -->
@@ -368,7 +378,9 @@
   </div>
 
   <!-- ═══════════════════ RIGHT PANEL: Preview ═══════════════════ -->
-  <div class="preview-panel">
+  <div class="panel-resizer" id="panelResizer"></div>
+
+	  <div class="preview-panel">
     <button class="fullscreen-exit-btn" id="fullscreenExitBtn" title="退出全屏预览 (ESC)">✕ 退出全屏</button>
     <div class="section-label">实时预览</div>
     <div class="preview-wrap transparent-bg" id="previewWrap">
@@ -421,6 +433,11 @@
 <script src="js/latex-ref.js"></script>
 <script src="js/syntax-highlight.js"></script>
 <script src="js/quick-edit.js"></script>
+<script src="js/autocomplete.js"></script>
+<script src="js/share.js"></script>
+<script src="js/resizer.js"></script>
+<script src="js/undo.js"></script>
+<script src="js/shortcuts.js"></script>
 <script src="js/preview-zoom.js"></script>
 <script src="js/render.js"></script>
 <script src="js/export.js"></script>

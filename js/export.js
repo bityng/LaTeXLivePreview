@@ -10,7 +10,6 @@ const Exporter = {
     if (!svgEl) return alert('请先输入有效的公式');
 
     const paddingEl = document.getElementById('padding');
-    const fontSizeEl = document.getElementById('fontSize');
     const pad = parseInt(paddingEl.value);
 
     // Get natural size from viewBox
@@ -25,7 +24,7 @@ const Exporter = {
       h = parseFloat(svgEl.getAttribute('height') || 80);
     }
 
-    const scale = parseInt(fontSizeEl.value) / 16;
+    const scale = parseFloat(document.getElementById('exportScale')?.value || 2);
     const canvasW = Math.ceil(w * scale + pad * 2);
     const canvasH = Math.ceil(h * scale + pad * 2);
 
@@ -67,9 +66,8 @@ const Exporter = {
     if (!svgEl) return alert('请先输入有效的公式');
 
     const paddingEl = document.getElementById('padding');
-    const fontSizeEl = document.getElementById('fontSize');
     const pad = parseInt(paddingEl.value);
-    const scale = parseInt(fontSizeEl.value) / 16;
+    const scale = parseFloat(document.getElementById('exportScale')?.value || 2);
 
     const vb = svgEl.getAttribute('viewBox');
     let w = 200, h = 80;

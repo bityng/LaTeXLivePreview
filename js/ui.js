@@ -19,11 +19,15 @@ const UIBindings = {
     SyntaxHighlight.init();
     PreviewZoom.init();
     QuickEdit.init();
+    AutoComplete.init();
     HistoryManager.initUI();
     if (App.fontManager)  App.fontManager.initUI();
     if (App.macroManager) App.macroManager.initUI();
     if (App.preprocessor) App.preprocessor.initUI();
     LaTeXRef.initUI();
+    PanelResizer.init();
+    UndoManager.init();
+    ShortcutsPanel.init();
     this.bindDarkModeToggle();
     this.bindFullscreenPreview();
   },
@@ -99,8 +103,10 @@ const UIBindings = {
     // 新增：复制 LaTeX 源码 / HTML 代码
     const clb = document.getElementById('copyLatexBtn');
     const chb = document.getElementById('copyHTMLBtn');
+    const slb = document.getElementById('shareLinkBtn');
     if (clb) clb.addEventListener('click', () => Exporter.copyLatex());
     if (chb) chb.addEventListener('click', () => Exporter.copyHTML());
+    if (slb) slb.addEventListener('click', () => ShareManager.copyShareLink());
   },
 
   bindCollapsibles() {

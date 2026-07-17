@@ -27,7 +27,12 @@ const App = {
     // 1. 加载 localStorage 中保存的用户偏好
     Storage.loadAll();
 
-    // 2. 恢复 DOM 控件值
+    // 2. 尝试从 URL hash 恢复公式（优先级高于 localStorage）
+    if (ShareManager.restoreFromHash()) {
+      App._restoredFromHash = true;
+    }
+
+    // 3. 恢复 DOM 控件值
     Storage.restoreDOM();
 
     // 3. 实例化子模块
